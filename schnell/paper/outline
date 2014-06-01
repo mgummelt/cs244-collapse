@@ -1,0 +1,30 @@
+intro
+	- congestion control is a p2p application, should be treated like it
+	- rfc2001, security section: not considered
+attack
+	- normal
+	- + wscale
+	- + small mss
+	- backoff and come back, shrew style
+	- hard for IDS to detect; looks like a standard connection
+impl
+	- not easy
+fix
+	- QOS
+	- per ip limits: rate c --> 1/c zombies
+	- threshhold number of acks in a row
+	- drop random packet, see if it's acked
+performance
+	- n clients, add one slow attack ; ns simulations
+	- implement with dsl line and greeble
+related
+	- shrew
+	- small mss attack
+	- ??
+conc:
+	- devestating 
+	- DDoS potential is huge
+	- could kill internet if payload of a slammer style worm
+		- http://www.computer.org/security/v1n4/j4wea.htm
+	- we notified THESE people...
+

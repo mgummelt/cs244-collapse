@@ -1,0 +1,36 @@
+DO NOT DISTRIBUTE
+
+OptAck Exploit Code from attack described in :
+CCS2005 "Misbehaving TCP Receivers Can Cause Internet-Wide Congestion Collapse"
+Rob Sherwood, Bobby Bhattacharjee, Ryan Braud
+
+
+NOTES:
+
+0) `gmake` to build
+1) built on a Linux 2.6.x system with iptables.  Tried to be portable,
+	but raw socket stuff is inherently non-portable: YMMV.
+2) Need to firewall off traffic from the victim so that the exploit
+	can muck with the TCP stream without interference from the kernel.
+	Tried to use libdnet, but if there are problems, may need to
+	firewall off victims by hand.
+	e.g., foreach victim, `iptables -A INPUT -s victim  -m tcp -p tcp --sport 80 -j DROP`
+3) The "victimsfile" is a required parameter, which is a whitespace separated file with
+one victim per line of the form:
+
+<URL to victim1>	<filesize>	[Hostname]
+<URL to victim2>	<filesize>	[Hostname]
+...
+
+See the file 'victims.example', the optional [Hostname] tag is for HTTP
+Virtual Hosting.
+
+4) Currently only http is supported - this is a proof of concept after all.
+5) Multiple HTTP Get's in a session doesn't quite work - POC code...
+6) Current code is optimized for many, slow reliable optack connections,
+	not one fast connection.  As a result, each connection averages about 250KB/s.
+	For more traffic, add more victims.  This is not an inherent limitation in the attack.
+
+- Rob <capveg@cs.umd.edu>
+.
+

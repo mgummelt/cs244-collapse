@@ -1,0 +1,5 @@
+# Lotsa different ips for SP2 from download.microsoft.com, conveniently spread throughout the world
+#http://download.microsoft.com/download/1/6/5/165b076b-aaa9-443d-84f0-73cf11fdcdf8/WindowsXP-KB835935-SP2-ENU.exe	278927592
+# URL	SIZE	[HostName(optional)]
+http://131.118.254.38/download/1/6/5/165b076b-aaa9-443d-84f0-73cf11fdcdf8/WindowsXP-KB835935-SP2-ENU.exe	278927592 download.microsoft.com
+http://131.118.254.40/download/1/6/5/165b076b-aaa9-443d-84f0-73cf11fdcdf8/WindowsXP-KB835935-SP2-ENU.exe	278927592 download.microsoft.com
