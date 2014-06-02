@@ -85,7 +85,7 @@ def collapse():
     dumpNodeConnections(net.hosts)
     net.pingAll()
 
-    CLI(net)
+    #CLI(net)
 
     print 'starting tcpprobe...'
     start_tcpprobe("out/cwnd.txt")

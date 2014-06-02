@@ -1,6 +1,9 @@
 To reproduce lazy opt-ack results:
 
-sudo python ./run.sh
+cd schnell
+make
+cd ..
+sudo ./run.sh
 
 This runs a mininet simulation that downloads a 10MB file twice.  The
 first time is with a standard wget call.  The second time is with a
@@ -54,4 +57,4 @@ restores the ack number to the sender's data sequence number.  You can
 see this happens when the ack line drops back down to meet the data
 line.  In the original paper, they were able to resynchronize the ack
 numbers and data numbers by estimating the sender's cwnd.  We weren't
-able to reproduce that result
+able to reproduce that result.
