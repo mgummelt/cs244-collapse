@@ -6,7 +6,7 @@ cd ..
 mkdir out
 sudo ./run.sh
 
-This runs a mininet simulation that downloads a 10MB file twice.  The
+This runs a mininet simulation that twice downloads a 10MB file over a 2Mb/s.  The
 first time is with a standard wget call.  The second time is with a
 lazy opt-ack attack.
 
@@ -28,16 +28,16 @@ data.  For comparison, first do this for the lazy attack.
 
 3. When presented with a "mininet>" prompt, run "xterm h1" and "xterm h2"
 
-4. In the h2 xterm, run "iptables -I OUTPUT -p tcp --dport 8000
+4. In the h1 xterm, run "iptables -I OUTPUT -p tcp --dport 8000
 --tcp-flags RST RST -j DROP".  This prevents the kernel from sending a
 reset in a raw socket connection.
 
-5. In the h2 xterm, run "wireshark &".  Add the filter "tcp.port ==
+5. In the h1 xterm, run "wireshark &".  Add the filter "tcp.port ==
 8000".  Start capturing packets on "h1-eth0".
 
-5. In the h1 xterm, run "python -m SimpleHTTPServer"
+5. In the h2 xterm, run "python -m SimpleHTTPServer"
 
-6. In the h2 xterm, run "./schnell/schnell -v -7 http://10.0.0.2:8000".
+6. In the h1 xterm, run "./schnell/schnell -v -7 http://10.0.0.2:8000".
 
 7. When it completes (it takes ~5s), export the packets you captured
 in wireshark via "File | Export packet dissection | CSV".
