@@ -2,12 +2,16 @@ import os
 
 from time import sleep
 from subprocess import Popen
+from signal import SIGINT
 
 from mininet.topo import Topo
 from mininet.node import CPULimitedHost
 from mininet.link import TCLink
 from mininet.net import Mininet
 from mininet.util import dumpNodeConnections
+from mininet.cli import CLI
+
+
 
 TIME = 5
 CONG='reno'
@@ -23,14 +27,12 @@ class CollapseTopo(Topo):
 
         self.addLink(attacker, router,
                      delay='10ms',
-                     bandwidth=1000)
+                     bw=2,
+                     max_queue_size=20)
 
         self.addLink(victim, router,
                      delay='10ms',
-                     bandwidth=1000,
-                     max_queue_size=10)
-
-
+                     bw=1000)
 
 def start_iperf(net):
     h2 = net.get('h2')
@@ -45,7 +47,27 @@ def start_iperf(net):
     h1.popen('iperf -c %s -t %s' % (h2.IP(), TIME))
 
 
-def start_tcpprobe(outfile="cwnd.txt"):
+def start_webserver(net):
+    h2 = net.get('h2')
+    webserver = h2.popen("python -m SimpleHTTPServer", shell=True)
+    sleep(1)
+    return webserver
+
+def block_reset(attacker):
+    attacker.cmd("iptables -I OUTPUT -p tcp --dport 8000 --tcp-flags RST RST -j DROP")
+
+def wget(net):
+    h1 = net.get('h1')
+    h2 = net.get('h2')
+    h1.cmd("wget http://%s:8000/big -O /dev/null" % (h2.IP(),))
+
+def attack(net):
+    h1 = net.get('h1')
+    h2 = net.get('h2')
+    h1.cmd("./schnell/schnell -v -7 http://%s:8000" % (h2.IP(),))
+
+
+def start_tcpprobe(outfile):
     os.system("rmmod tcp_probe; modprobe tcp_probe full=1;")
     Popen("cat /proc/net/tcpprobe > %s" % outfile,
           shell=True)
@@ -63,11 +85,39 @@ def collapse():
     dumpNodeConnections(net.hosts)
     net.pingAll()
 
-    start_tcpprobe("cwnd.txt")
-    start_iperf(net)
-    sleep(TIME)
+    CLI(net)
 
+    print 'starting tcpprobe...'
+    start_tcpprobe("out/cwnd.txt")
+
+    print 'starting web server...'
+    webserver = start_webserver(net)
+
+    print 'starting wget...'
+    wget(net)
+
+    print 'stopping tcpprobe...'
     stop_tcpprobe()
+
+    # print 'stopping web server...'
+    # webserver.terminate()
+
+    # print 'starting web server...'
+    # webserver = start_webserver(net)
+
+    print 'starting tcpprobe...'
+    start_tcpprobe("out/cwnd_optack.txt")
+
+    print 'starting attack...'
+    block_reset(net.get('h1'))
+    attack(net)
+
+    # print 'stopping web server...'
+    # webserver.send_signal(SIGINT)
+
+    print 'stopping tcpprobe...'
+    stop_tcpprobe()
+
     net.stop()
 
 

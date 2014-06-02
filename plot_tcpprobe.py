@@ -43,6 +43,7 @@ def parse_file(f):
         times[sport].append(float(fields[0]))
 
         c = int(fields[6])
+        print c
         cwnd[sport].append(c * 1480 / 1024.0)
         srtt.append(int(fields[-1]))
     return times, cwnd
