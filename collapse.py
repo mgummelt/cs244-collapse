@@ -106,7 +106,7 @@ def collapse():
     # webserver = start_webserver(net)
 
     print 'starting tcpprobe...'
-    start_tcpprobe("out/cwnd_optack.txt")
+    start_tcpprobe("out/cwnd_lazy.txt")
 
     print 'starting attack...'
     block_reset(net.get('h1'))

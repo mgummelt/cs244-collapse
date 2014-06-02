@@ -3,6 +3,7 @@ To reproduce lazy opt-ack results:
 cd schnell
 make
 cd ..
+mkdir out
 sudo ./run.sh
 
 This runs a mininet simulation that downloads a 10MB file twice.  The
